@@ -1,0 +1,480 @@
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Movie Explorer App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"></link>
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #121212;
+      color: #e5e5e5;
+      margin: 0;
+      overscroll-behavior-y: contain;
+    }
+    /* Scrollbar for horizontal scroll */
+    .horizontal-scroll::-webkit-scrollbar {
+      height: 8px;
+    }
+    .horizontal-scroll::-webkit-scrollbar-thumb {
+      background-color: #e50914;
+      border-radius: 4px;
+    }
+    .horizontal-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    /* Hide scrollbar for Firefox */
+    .horizontal-scroll {
+      scrollbar-width: thin;
+      scrollbar-color: #e50914 transparent;
+    }
+    /* Scroll snap for horizontal lists */
+    .snap-x {
+      scroll-snap-type: x mandatory;
+    }
+    .snap-start {
+      scroll-snap-align: start;
+    }
+    /* Portrait only */
+    @media (orientation: landscape) {
+      body {
+        overflow-x: hidden;
+      }
+    }
+  </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+
+  <!-- Header -->
+  <header class="bg-[#e50914] fixed top-0 left-0 right-0 z-50 h-14 flex items-center justify-center shadow-lg">
+    <h1 class="text-white font-bold text-xl select-none">Movie Explorer</h1>
+  </header>
+
+  <!-- Tabs -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-[#181818] border-t border-gray-700 flex justify-around items-center h-14 z-50">
+    <button id="tab-home" aria-selected="true" aria-controls="home-tab" role="tab" tabindex="0" class="text-[#e50914] font-semibold flex flex-col items-center justify-center text-xs">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9.75L12 3l9 6.75v10.5a1.5 1.5 0 01-1.5 1.5H4.5A1.5 1.5 0 013 20.25V9.75z"/></svg>
+      Home
+    </button>
+    <button id="tab-mylist" aria-selected="false" aria-controls="mylist-tab" role="tab" tabindex="-1" class="text-gray-400 font-semibold flex flex-col items-center justify-center text-xs">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M5 4v16h14V4H5zm12 14H7v-2h10v2zm0-4H7v-2h10v2zm0-4H7V8h10v2z"/></svg>
+      My List
+    </button>
+  </nav>
+
+  <!-- Main content container -->
+  <main class="flex-grow overflow-y-auto pt-14 pb-14" tabindex="0">
+
+    <!-- Home Tab -->
+    <section id="home-tab" role="tabpanel" aria-labelledby="tab-home" tabindex="0" class="px-4 space-y-8">
+      <!-- Sections will be dynamically inserted here -->
+    </section>
+
+    <!-- My List Tab -->
+    <section id="mylist-tab" role="tabpanel" aria-labelledby="tab-mylist" tabindex="0" class="hidden px-4 space-y-4">
+      <h2 class="text-xl font-semibold mb-4">My List</h2>
+      <ul id="mylist-container" class="space-y-4">
+        <!-- Saved movies list -->
+      </ul>
+      <p id="mylist-empty" class="text-gray-400 text-center mt-8">Your list is empty. Add movies from Home tab.</p>
+    </section>
+
+  </main>
+
+  <!-- Movie Details Modal -->
+  <div id="movie-details-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1" class="fixed inset-0 bg-black bg-opacity-90 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4 z-60 hidden">
+    <div class="bg-[#181818] rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto shadow-lg relative">
+      <button id="modal-close-btn" aria-label="Close details" class="absolute top-3 right-3 text-gray-400 hover:text-white text-2xl font-bold focus:outline-none">&times;</button>
+      <div class="p-4 space-y-4">
+        <img id="modal-poster" src="" alt="Movie poster image" class="w-full rounded-md shadow-md" />
+        <h3 id="modal-title" class="text-2xl font-bold"></h3>
+        <div class="flex items-center space-x-2 text-yellow-400 font-semibold">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+          <span id="modal-rating"></span>
+        </div>
+        <p id="modal-overview" class="text-gray-300 text-sm leading-relaxed"></p>
+        <div>
+          <h4 class="font-semibold mb-1">Director</h4>
+          <p id="modal-director" class="text-gray-300 text-sm"></p>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-1">Cast</h4>
+          <p id="modal-cast" class="text-gray-300 text-sm"></p>
+        </div>
+        <div class="flex space-x-4 mt-2">
+          <button id="modal-like-btn" aria-pressed="false" aria-label="Like this movie" class="flex items-center space-x-2 bg-[#222] hover:bg-[#333] text-white font-semibold py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+            <i class="fas fa-thumbs-up"></i>
+            <span>Like</span>
+          </button>
+          <button id="modal-dislike-btn" aria-pressed="false" aria-label="Dislike this movie" class="flex items-center space-x-2 bg-[#222] hover:bg-[#333] text-white font-semibold py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+            <i class="fas fa-thumbs-down"></i>
+            <span>Dislike</span>
+          </button>
+        </div>
+        <button id="modal-mylist-btn" class="w-full bg-[#e50914] hover:bg-[#f40612] text-white font-semibold py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#e50914] mt-4">
+          Add to My List
+        </button>
+        <div>
+          <h4 class="font-semibold mb-2 mt-4">Similar Movies</h4>
+          <div id="modal-similar" class="flex space-x-3 overflow-x-auto horizontal-scroll snap-x">
+            <!-- Similar movies inserted here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const API_KEY = '35fd3412de0583993dfea02c169c1472';
+      const BASE_URL = 'https://api.themoviedb.org/3';
+      const IMAGE_BASE = 'https://image.tmdb.org/t/p/w342';
+      const FALLBACKS = {
+        now_playing: [
+          {id: 1, title: "Fallback Now Playing 1", poster_path: "", vote_average: 7.5},
+          {id: 2, title: "Fallback Now Playing 2", poster_path: "", vote_average: 6.8},
+          {id: 3, title: "Fallback Now Playing 3", poster_path: "", vote_average: 7.0},
+          {id: 13, title: "Fallback Now Playing 4", poster_path: "", vote_average: 7.2},
+          {id: 14, title: "Fallback Now Playing 5", poster_path: "", vote_average: 6.9},
+          {id: 15, title: "Fallback Now Playing 6", poster_path: "", vote_average: 7.1},
+          {id: 16, title: "Fallback Now Playing 7", poster_path: "", vote_average: 7.3},
+          {id: 17, title: "Fallback Now Playing 8", poster_path: "", vote_average: 6.7},
+          {id: 18, title: "Fallback Now Playing 9", poster_path: "", vote_average: 7.4},
+          {id: 19, title: "Fallback Now Playing 10", poster_path: "", vote_average: 7.0}
+        ],
+        popular: [
+          {id: 4, title: "Fallback Popular 1", poster_path: "", vote_average: 8.1},
+          {id: 5, title: "Fallback Popular 2", poster_path: "", vote_average: 7.9},
+          {id: 6, title: "Fallback Popular 3", poster_path: "", vote_average: 7.7},
+          {id: 20, title: "Fallback Popular 4", poster_path: "", vote_average: 8.0},
+          {id: 21, title: "Fallback Popular 5", poster_path: "", vote_average: 7.8},
+          {id: 22, title: "Fallback Popular 6", poster_path: "", vote_average: 7.6},
+          {id: 23, title: "Fallback Popular 7", poster_path: "", vote_average: 7.9},
+          {id: 24, title: "Fallback Popular 8", poster_path: "", vote_average: 8.2},
+          {id: 25, title: "Fallback Popular 9", poster_path: "", vote_average: 7.5},
+          {id: 26, title: "Fallback Popular 10", poster_path: "", vote_average: 7.7}
+        ],
+        top_rated: [
+          {id: 7, title: "Fallback Top Rated 1", poster_path: "", vote_average: 8.5},
+          {id: 8, title: "Fallback Top Rated 2", poster_path: "", vote_average: 8.3},
+          {id: 9, title: "Fallback Top Rated 3", poster_path: "", vote_average: 8.0},
+          {id: 27, title: "Fallback Top Rated 4", poster_path: "", vote_average: 8.4},
+          {id: 28, title: "Fallback Top Rated 5", poster_path: "", vote_average: 8.2},
+          {id: 29, title: "Fallback Top Rated 6", poster_path: "", vote_average: 8.1},
+          {id: 30, title: "Fallback Top Rated 7", poster_path: "", vote_average: 8.3},
+          {id: 31, title: "Fallback Top Rated 8", poster_path: "", vote_average: 8.6},
+          {id: 32, title: "Fallback Top Rated 9", poster_path: "", vote_average: 8.0},
+          {id: 33, title: "Fallback Top Rated 10", poster_path: "", vote_average: 8.4}
+        ],
+        upcoming: [
+          {id: 10, title: "Fallback Upcoming 1", poster_path: "", vote_average: 6.5},
+          {id: 11, title: "Fallback Upcoming 2", poster_path: "", vote_average: 6.8},
+          {id: 12, title: "Fallback Upcoming 3", poster_path: "", vote_average: 7.0},
+          {id: 34, title: "Fallback Upcoming 4", poster_path: "", vote_average: 6.7},
+          {id: 35, title: "Fallback Upcoming 5", poster_path: "", vote_average: 6.9},
+          {id: 36, title: "Fallback Upcoming 6", poster_path: "", vote_average: 7.1},
+          {id: 37, title: "Fallback Upcoming 7", poster_path: "", vote_average: 6.6},
+          {id: 38, title: "Fallback Upcoming 8", poster_path: "", vote_average: 6.8},
+          {id: 39, title: "Fallback Upcoming 9", poster_path: "", vote_average: 7.0},
+          {id: 40, title: "Fallback Upcoming 10", poster_path: "", vote_average: 6.9}
+        ]
+      };
+
+      let movieList = [];
+      // Store like/dislike states by movie ID
+      const movieReactions = {};
+
+      const homeTab = document.getElementById('home-tab');
+      const myListTab = document.getElementById('mylist-tab');
+      const myListContainer = document.getElementById('mylist-container');
+      const myListEmptyMessage = document.getElementById('mylist-empty');
+      const modal = document.getElementById('movie-details-modal');
+      const modalCloseBtn = document.getElementById('modal-close-btn');
+      const modalPoster = document.getElementById('modal-poster');
+      const modalTitle = document.getElementById('modal-title');
+      const modalRating = document.getElementById('modal-rating');
+      const modalOverview = document.getElementById('modal-overview');
+      const modalDirector = document.getElementById('modal-director');
+      const modalCast = document.getElementById('modal-cast');
+      const modalSimilar = document.getElementById('modal-similar');
+      const modalMyListBtn = document.getElementById('modal-mylist-btn');
+      const modalLikeBtn = document.getElementById('modal-like-btn');
+      const modalDislikeBtn = document.getElementById('modal-dislike-btn');
+
+      const tabHome = document.getElementById('tab-home');
+      const tabMyList = document.getElementById('tab-mylist');
+
+      let currentMovieId = null;
+
+      // Fetch movies based on categories (now_playing, popular, top_rated, upcoming)
+      async function fetchMovies(category) {
+        try {
+          const res = await fetch(`${BASE_URL}/movie/${category}?api_key=${API_KEY}&language=en-US&page=1`);
+          if (!res.ok) throw new Error('API error');
+          const data = await res.json();
+          return data.results;
+        } catch {
+          return FALLBACKS[category] || [];
+        }
+      }
+
+      // Create movie card element
+      function createMovieCard(movie) {
+        const card = document.createElement('div');
+        card.className = 'flex-shrink-0 w-40 sm:w-44 md:w-52 bg-[#222] rounded-lg shadow-md group cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#e50914]';
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('aria-label', `View details for ${movie.title}`);
+
+        const posterSrc = movie.poster_path ? IMAGE_BASE + movie.poster_path : 'https://placehold.co/342x513/png?text=No+Image+Available&font=roboto';
+        const posterAlt = `Movie poster image for ${movie.title}`;
+
+        card.innerHTML = `
+          <img src="${posterSrc}" alt="${posterAlt}" class="w-full rounded-md">
+          <div class="p-2">
+            <h4 class="font-semibold text-white truncate">${movie.title}</h4>
+            <div class="flex items-center space-x-2 text-yellow-400">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+              <span class="text-sm">${movie.vote_average}</span>
+            </div>
+          </div>
+        `;
+        card.addEventListener('click', () => openMovieDetails(movie.id));
+        card.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openMovieDetails(movie.id);
+          }
+        });
+        return card;
+      }
+
+      // Update like/dislike button states in modal
+      function updateReactionButtons(movieId) {
+        const reaction = movieReactions[movieId];
+        if (reaction === 'like') {
+          modalLikeBtn.classList.add('bg-green-600');
+          modalLikeBtn.setAttribute('aria-pressed', 'true');
+          modalDislikeBtn.classList.remove('bg-red-600');
+          modalDislikeBtn.setAttribute('aria-pressed', 'false');
+        } else if (reaction === 'dislike') {
+          modalDislikeBtn.classList.add('bg-red-600');
+          modalDislikeBtn.setAttribute('aria-pressed', 'true');
+          modalLikeBtn.classList.remove('bg-green-600');
+          modalLikeBtn.setAttribute('aria-pressed', 'false');
+        } else {
+          modalLikeBtn.classList.remove('bg-green-600');
+          modalLikeBtn.setAttribute('aria-pressed', 'false');
+          modalDislikeBtn.classList.remove('bg-red-600');
+          modalDislikeBtn.setAttribute('aria-pressed', 'false');
+        }
+      }
+
+      // Open movie details modal
+      async function openMovieDetails(id) {
+        currentMovieId = id;
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+        modal.focus();
+        const movie = await fetchMovieDetails(id);
+        const cast = movie.cast.slice(0, 5).map(actor => actor.name).join(', ') || 'Unknown';
+        const director = movie.director || 'Unknown';
+        const similarMovies = movie.similar.slice(0, 5);
+
+        modalPoster.src = movie.poster_path ? IMAGE_BASE + movie.poster_path : 'https://placehold.co/342x513/png?text=No+Image+Available&font=roboto';
+        modalPoster.alt = `Movie poster image for ${movie.title}`;
+        modalTitle.textContent = movie.title;
+        modalRating.textContent = movie.vote_average || 'N/A';
+        modalOverview.textContent = movie.overview || 'No overview available.';
+        modalDirector.textContent = director;
+        modalCast.textContent = cast;
+
+        updateReactionButtons(id);
+
+        modalSimilar.innerHTML = similarMovies.map(similar => {
+          const simPosterSrc = similar.poster_path ? IMAGE_BASE + similar.poster_path : 'https://placehold.co/342x513/png?text=No+Image+Available&font=roboto';
+          const simPosterAlt = `Movie poster image for ${similar.title}`;
+          return `
+          <div class="w-32 md:w-36 lg:w-40 bg-[#222] rounded-md shadow-md snap-start cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#e50914]" tabindex="0" aria-label="View details for ${similar.title}">
+            <img src="${simPosterSrc}" alt="${simPosterAlt}" class="w-full rounded-md">
+            <div class="p-2">
+              <h4 class="font-semibold text-white truncate">${similar.title}</h4>
+            </div>
+          </div>
+          `;
+        }).join('');
+
+        // Add event listeners for similar movies
+        Array.from(modalSimilar.children).forEach((child, index) => {
+          child.addEventListener('click', () => openMovieDetails(similarMovies[index].id));
+          child.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              openMovieDetails(similarMovies[index].id);
+            }
+          });
+        });
+      }
+
+      // Fetch movie details
+      async function fetchMovieDetails(id) {
+        try {
+          const res = await fetch(`${BASE_URL}/movie/${id}?api_key=${API_KEY}&language=en-US`);
+          if (!res.ok) throw new Error('API error');
+          const data = await res.json();
+          const credits = await fetch(`${BASE_URL}/movie/${id}/credits?api_key=${API_KEY}`);
+          const creditsData = await credits.json();
+          const director = creditsData.crew.find(person => person.job === 'Director');
+          const similar = await fetch(`${BASE_URL}/movie/${id}/similar?api_key=${API_KEY}&language=en-US&page=1`);
+          const similarData = await similar.json();
+          return { ...data, cast: creditsData.cast || [], director: director ? director.name : 'Unknown', similar: similarData.results || [] };
+        } catch {
+          // Return fallback movie details if API fails
+          return {
+            id,
+            title: "Unknown Movie",
+            poster_path: "",
+            vote_average: "N/A",
+            overview: "No overview available.",
+            cast: [],
+            director: "Unknown",
+            similar: []
+          };
+        }
+      }
+
+      // Initialize categories and sections
+      async function init() {
+        const categories = ['now_playing', 'popular', 'top_rated', 'upcoming'];
+        for (let category of categories) {
+          const movies = await fetchMovies(category);
+          createCategorySection(category, movies);
+        }
+      }
+
+      // Create section for each category
+      function createCategorySection(category, movies) {
+        const section = document.createElement('section');
+        section.className = 'space-y-2';
+        section.setAttribute('aria-label', category.replace('_', ' ').toUpperCase());
+
+        const heading = document.createElement('h2');
+        heading.className = 'text-xl font-semibold text-white';
+        heading.textContent = category.replace('_', ' ').toUpperCase();
+
+        const scrollContainer = document.createElement('div');
+        scrollContainer.className = 'flex overflow-x-auto horizontal-scroll space-x-3 snap-x py-1';
+
+        movies.forEach(movie => {
+          scrollContainer.appendChild(createMovieCard(movie));
+        });
+
+        section.appendChild(heading);
+        section.appendChild(scrollContainer);
+        homeTab.appendChild(section);
+      }
+
+      // Close movie details modal
+      modalCloseBtn.addEventListener('click', () => {
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+      });
+
+      // Close modal on Escape key
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+          modal.classList.add('hidden');
+          modal.setAttribute('aria-hidden', 'true');
+        }
+      });
+
+      // Save movie to "My List"
+      modalMyListBtn.addEventListener('click', () => {
+        const movie = {
+          title: modalTitle.textContent,
+          poster_path: modalPoster.src,
+          rating: modalRating.textContent
+        };
+        // Avoid duplicates
+        if (!movieList.some(m => m.title === movie.title)) {
+          movieList.push(movie);
+          renderMyList();
+        }
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+      });
+
+      // Render the "My List" section
+      function renderMyList() {
+        myListContainer.innerHTML = '';
+        if (movieList.length > 0) {
+          myListEmptyMessage.classList.add('hidden');
+          movieList.forEach(movie => {
+            const li = document.createElement('li');
+            li.className = 'flex items-center justify-between p-2 border-b border-gray-700';
+            const posterImg = document.createElement('img');
+            posterImg.src = movie.poster_path;
+            posterImg.alt = `Movie poster image for ${movie.title}`;
+            posterImg.className = 'w-12 h-16 object-cover rounded-md mr-3 flex-shrink-0';
+            const titleSpan = document.createElement('span');
+            titleSpan.className = 'text-white font-semibold truncate flex-grow';
+            titleSpan.textContent = movie.title;
+            const ratingSpan = document.createElement('span');
+            ratingSpan.className = 'text-yellow-400 ml-3 flex-shrink-0';
+            ratingSpan.textContent = movie.rating;
+
+            li.appendChild(posterImg);
+            li.appendChild(titleSpan);
+            li.appendChild(ratingSpan);
+
+            myListContainer.appendChild(li);
+          });
+        } else {
+          myListEmptyMessage.classList.remove('hidden');
+        }
+      }
+
+      // Like button click handler
+      modalLikeBtn.addEventListener('click', () => {
+        if (!currentMovieId) return;
+        if (movieReactions[currentMovieId] === 'like') {
+          delete movieReactions[currentMovieId];
+        } else {
+          movieReactions[currentMovieId] = 'like';
+        }
+        updateReactionButtons(currentMovieId);
+      });
+
+      // Dislike button click handler
+      modalDislikeBtn.addEventListener('click', () => {
+        if (!currentMovieId) return;
+        if (movieReactions[currentMovieId] === 'dislike') {
+          delete movieReactions[currentMovieId];
+        } else {
+          movieReactions[currentMovieId] = 'dislike';
+        }
+        updateReactionButtons(currentMovieId);
+      });
+
+      // Switch tabs between Home and My List
+      tabHome.addEventListener('click', () => {
+        tabHome.setAttribute('aria-selected', 'true');
+        tabMyList.setAttribute('aria-selected', 'false');
+        homeTab.classList.remove('hidden');
+        myListTab.classList.add('hidden');
+      });
+
+      tabMyList.addEventListener('click', () => {
+        tabHome.setAttribute('aria-selected', 'false');
+        tabMyList.setAttribute('aria-selected', 'true');
+        homeTab.classList.add('hidden');
+        myListTab.classList.remove('hidden');
+      });
+
+      // Initialize the app
+      init();
+    })();
+  </script>
+</body>
+</html>
